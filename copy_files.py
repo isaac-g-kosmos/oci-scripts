@@ -1,8 +1,7 @@
 import oci
 
 
-def move_files(source_namespace, source_bucket, source_directory, destination_namespace, destination_bucket,
-               destination_directory, config, destructive=False):
+def move_files(source_namespace, source_bucket, source_directory, destination_namespace, destination_bucket, destination_directory, config,destructive=False):
     # Create a new Object Storage client
     object_storage_client = oci.object_storage.ObjectStorageClient(config)
 
@@ -56,7 +55,7 @@ def move_files(source_namespace, source_bucket, source_directory, destination_na
         )
 
         # Check if the copy was successful
-        if copy_object_response.status == 202:
+        if copy_object_response.status == 202 :
             print(f"Object copied successfully from {source_object_url} to {destination_object_url}")
             if destructive:
                 # Delete the original object
@@ -75,17 +74,15 @@ def move_files(source_namespace, source_bucket, source_directory, destination_na
             print(f"Failed to copy object from {source_object_url} to {destination_object_url}")
 
 
+
+
 if __name__ == "__main__":
 
     config = oci.config.from_file()
 
-    path_names = ["ROSE",
-                  "SiW",
-                  "MSU-MFSD",
-                  "MTURK",
+    path_names = [
                   "NUAA",
 
-                  "SoF",
                   "Youtube",
                   "Youtube_vlogs",
                   "classified_vlogs",
@@ -101,8 +98,9 @@ if __name__ == "__main__":
     for source_object_name in path_names:
         # source_object_name = "HPAD"
 
-        destiation_name = source_object_name.split("/")[-1].lower().replace("-", "_")
+        destiation_name=source_object_name.split("/")[-1].lower().replace("-","_")
         destination_object_name = f"spoof_detection/{destiation_name}"
 
+
         move_files(source_namespace, source_bucket, source_object_name, destination_namespace, destination_bucket,
-                   destination_object_name, config, destructive=False)
+                    destination_object_name, config,destructive=False)
