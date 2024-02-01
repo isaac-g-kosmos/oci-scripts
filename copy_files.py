@@ -29,8 +29,8 @@ def move_files(source_namespace, source_bucket, source_directory, destination_na
         destination_object_name = source_object_name.replace(source_directory, destination_directory, 1)
 
         # Construct the source and destination object URLs
-        source_object_url = f"https://objectstorage.{source_namespace}.oraclecloud.com/n/{source_namespace}/b/{source_bucket}/o/{source_object_name}"
-        destination_object_url = f"https://objectstorage.{destination_namespace}.oraclecloud.com/n/{destination_namespace}/b/{destination_bucket}/o/{destination_object_name}"
+        # source_object_url = f"https://objectstorage.{source_namespace}.oraclecloud.com/n/{source_namespace}/b/{source_bucket}/o/{source_object_name}"
+        # destination_object_url = f"https://objectstorage.{destination_namespace}.oraclecloud.com/n/{destination_namespace}/b/{destination_bucket}/o/{destination_object_name}"
 
         # Copy the object to the new location
         copy_object_response = object_storage_client.copy_object(
@@ -56,7 +56,7 @@ def move_files(source_namespace, source_bucket, source_directory, destination_na
 
         # Check if the copy was successful
         if copy_object_response.status == 202 :
-            print(f"Object copied successfully from {source_object_url} to {destination_object_url}")
+            print(f"Object copied successfully from {source_object_name} to {destination_object_name}")
             if destructive:
                 # Delete the original object
                 delete_object_response = object_storage_client.delete_object(
@@ -67,11 +67,11 @@ def move_files(source_namespace, source_bucket, source_directory, destination_na
 
                 # Check if the deletion was successful
                 if delete_object_response.status == 204:
-                    print(f"Original object deleted successfully: {source_object_url}")
+                    print(f"Original object deleted successfully: {source_object_name}")
                 else:
-                    print(f"Failed to delete the original object: {source_object_url}")
+                    print(f"Failed to delete the original object: {destination_object_name}")
         else:
-            print(f"Failed to copy object from {source_object_url} to {destination_object_url}")
+            print(f"Failed to copy object from {source_object_name} to {destination_object_name}")
 
 
 

@@ -24,20 +24,22 @@ def list_oci_directory(namespace:str,bucket_name:str,prefix:str)->List:
     object_list= [obj.name for obj in object_list]
     object_list= [obj.removeprefix(prefix) for obj in object_list]
     return object_list
-#%%
+
 bucket_name = "Spoof-datasets"
 namespace ="axnq1wbomszp"
 source_object_name="VGG_FACE"
 original_dir=list_oci_directory(namespace,bucket_name,source_object_name)
 destiation_name = source_object_name.split("/")[-1].lower().replace("-", "_")
-#%%
+
 destination_object_name = f"spoof_detection_preprocessing/{destiation_name}"
 
 copy_dir=list_oci_directory(namespace,bucket_name,destination_object_name)
-#%%
+
 missing=(set(original_dir)-set(copy_dir))
 #%%
-for obj in list(missing):
+list1=list(missing)
+list1.reverse()
+for obj in list1:
     source_object_name = f"VGG_FACE"+obj
     destination_object_name = "spoof_detection/vgg_face"+obj
 
