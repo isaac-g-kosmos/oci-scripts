@@ -80,8 +80,8 @@ config = oci.config.from_file()
 source_namespace = "axnq1wbomszp"
 source_bucket = "Spoof-datasets"
 
-files_to_convert=list_files(config,source_namespace,source_bucket,"spoof_detection/youtube")
-
+files_to_convert=list_files(config,source_namespace,source_bucket,"spoof_detection/hpad")
+#%%
 for obj in files_to_convert:
     try:
         restore_object(config,obj.name,source_bucket,source_namespace)

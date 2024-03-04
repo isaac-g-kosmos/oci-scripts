@@ -34,8 +34,8 @@ destiation_name = source_object_name.split("/")[-1].lower().replace("-", "_")
 destination_object_name = f"spoof_detection_preprocessing/{destiation_name}"
 
 copy_dir=list_oci_directory(namespace,bucket_name,destination_object_name)
-
-missing=(set(original_dir)-set(copy_dir))
+#%%
+missing=(len(set(original_dir))-len(set(copy_dir)))
 #%%
 list1=list(missing)
 list1.reverse()
