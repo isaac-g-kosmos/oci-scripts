@@ -76,17 +76,42 @@ def copy_to_same_path(config,object_name, bucket_name, namespace_name):
 
     else:
         print(f"Failed to copy object from {object_name} to {object_name}")
-config = oci.config.from_file()
+config = oci.config.from_file("/home/ubuntu/oci-scripts/config")
 source_namespace = "axnq1wbomszp"
 source_bucket = "Spoof-datasets"
+restore_list=[
+"spoof_detection_preprocessing/afw",
+"spoof_detection_preprocessing/biwi",
+"spoof_detection_preprocessing/cleaned_images",
+"spoof_detection_preprocessing/cleaned_images_depthmap",
+"spoof_detection_preprocessing/cofw",
+"spoof_detection_preprocessing/glasses_pictures",
+"spoof_detection_preprocessing/helen",
+"spoof_detection_preprocessing/hhpad",
+"spoof_detection_preprocessing/lapa_test",
+"spoof_detection_preprocessing/lfpw",
+"spoof_detection_preprocessing/masks",
+"spoof_detection_preprocessing/mlfp",
+"spoof_detection_preprocessing/msu_mfsd",
+"spoof_detection_preprocessing/new_augmentations",
+"spoof_detection_preprocessing/occlusion_augmentation",
+"spoof_detection_preprocessing/scrapped_hats",
+"spoof_detection_preprocessing/scrapped_picutures",
+"spoof_detection_preprocessing/sof",
+"spoof_detection_preprocessing/val_hqfo",
+"spoof_detection_preprocessing/wflw",
+"spoof_detection_preprocessing/vgg_face",
+"spoof_detection_preprocessing/youtube_vlogs",
 
-files_to_convert=list_files(config,source_namespace,source_bucket,"spoof_detection/hpad")
-#%%
-for obj in files_to_convert:
-    try:
-        restore_object(config,obj.name,source_bucket,source_namespace)
-    except:
-        print(f"Object cant be restored {obj.name}")
-#%%
-for obj in files_to_convert:
-        copy_to_same_path(config,obj.name,source_bucket,source_namespace)
+]
+for restore_path in restore_list:
+    files_to_convert=list_files(config,source_namespace,source_bucket,restore_path)
+
+    for obj in files_to_convert:
+        try:
+            restore_object(config,obj.name,source_bucket,source_namespace)
+        except:
+            print(f"Object cant be restored {obj.name}")
+
+    for obj in files_to_convert:
+            copy_to_same_path(config,obj.name,source_bucket,source_namespace)
