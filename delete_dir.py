@@ -19,7 +19,7 @@ def list_oci_directory(namespace:str,bucket_name:str,prefix:str)->List:
         )
 
         object_list.extend(list_objects_response.data.objects)
-        break
+        # break
         if list_objects_response.data.next_start_with == None:
             break
         page += 1
