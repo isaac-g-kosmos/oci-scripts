@@ -1,4 +1,5 @@
 import oci
+import argparse
 
 from retry import retry
 
@@ -76,35 +77,17 @@ def copy_to_same_path(config,object_name, bucket_name, namespace_name):
 
     else:
         print(f"Failed to copy object from {object_name} to {object_name}")
-config = oci.config.from_file("/home/ubuntu/oci-scripts/config")
-source_namespace = "axnq1wbomszp"
-source_bucket = "Spoof-datasets"
-restore_list=[
-"spoof_detection_preprocessing/afw",
-"spoof_detection_preprocessing/biwi",
-"spoof_detection_preprocessing/cleaned_images",
-"spoof_detection_preprocessing/cleaned_images_depthmap",
-"spoof_detection_preprocessing/cofw",
-"spoof_detection_preprocessing/glasses_pictures",
-"spoof_detection_preprocessing/helen",
-"spoof_detection_preprocessing/hhpad",
-"spoof_detection_preprocessing/lapa_test",
-"spoof_detection_preprocessing/lfpw",
-"spoof_detection_preprocessing/masks",
-"spoof_detection_preprocessing/mlfp",
-"spoof_detection_preprocessing/msu_mfsd",
-"spoof_detection_preprocessing/new_augmentations",
-"spoof_detection_preprocessing/occlusion_augmentation",
-"spoof_detection_preprocessing/scrapped_hats",
-"spoof_detection_preprocessing/scrapped_picutures",
-"spoof_detection_preprocessing/sof",
-"spoof_detection_preprocessing/val_hqfo",
-"spoof_detection_preprocessing/wflw",
-"spoof_detection_preprocessing/vgg_face",
-"spoof_detection_preprocessing/youtube_vlogs",
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--oci-bucket', help='Bucket for files to be uploaded')
+    parser.add_argument('--restore-path', help='OCI path to directory of objets to be restored')
+    parser.add_argument('--name-space', help='OCI namespace being used')
+    args = parser.parse_args()
+    config = oci.config.from_file()
+    source_namespace = args.name_space
+    source_bucket = args.oci_bucket
+    restore_path=args.restore_path
 
-]
-for restore_path in restore_list:
     files_to_convert=list_files(config,source_namespace,source_bucket,restore_path)
 
     for obj in files_to_convert:

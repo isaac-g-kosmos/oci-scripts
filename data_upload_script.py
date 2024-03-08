@@ -1,42 +1,27 @@
-import os
 import oci
-from retry import retry
-# from oci.object_storage.models import CreateObjectDetails
-import pandas as pd
+import os
 import argparse
+from typing import Dict, List
 
-parser = argparse.ArgumentParser(description='Upload files to OCI Object Storage and delete them from the local directory.')
-parser.add_argument('csv_path', help='Path to the CSV file containing the list of file paths')
-args = parser.parse_args()
+import logging
 
-csv_file_path = args.csv_path
+app_logger = logging.getLogger("app")
 
-# Read the list of file paths from the CSV file
-list = pd.read_csv(csv_file_path)
-# list=pd.read_csv("/home/ubuntu/file_paths.csv")
-list=list["File Paths"].tolist()
-config = {
-    "user": "ocid1.user.oc1..aaaaaaaaguhfrbhcdmpg422gmy26a26wgjrlfmksn4s6hwkxkjbsso27bida",
-    "key_file": "/home/ubuntu/key.pem",
-    "fingerprint": "95:bc:20:31:0a:62:f2:71:55:3d:13:e8:2f:5a:90:18",
-    "tenancy": "ocid1.tenancy.oc1..aaaaaaaapl5yemd6dbgblyanwegoexml2ognad3djdz76rcozmsmeacmyntq",
-    "region": "mx-queretaro-1",
-    "compartment_id": "ocid1.compartment.oc1..aaaaaaaaelv42hlt455pwfprsf7tjwso5vlbsev4kc6pvhhxtljedpfccr5a",
-}
-namespace= "axnq1wbomszp"
-# object_storage = oci.object_storage.ObjectStorageClient(config)
 
-# Function to upload a file to Object Storage
-@retry(tries=7, delay=1)
-def upload_file(bucket_name, local_path, object_name):
-    # create_details = CreateObjectDetails()
-    # create_details.content_type = "application/octet-stream"  # You can set the appropriate content type.
-    with open(local_path, "rb") as file:
-        object_storage.put_object(namespace,bucket_name, object_name, file)
-def upload_to_oci(oci_bucket_name,local_file_path, namespace):
-    oci_object_name = local_file_path.replace("/home/ubuntu/NUAA/depth-map/","NUAA/images/mapping_cut/")
-    print("oci object",oci_object_name )
-    object_storage = oci.object_storage.ObjectStorageClient(config)
+def upload_to_oci(local_file_path: str, oci_object_name: str, oci_bucket_name: str, oci_config: Dict, namespace: str, prefix: str) -> None:
+    """
+    Upload a file to OCI Object Storage.
+
+    :param local_file_path: Local path of the file to be uploaded.
+    :param oci_object_name: Object name in OCI Object Storage.
+    :param oci_bucket_name: Name of the OCI bucket.
+    :param oci_config: OCI configuration details.
+    :param namespace: OCI namespace being used.
+    :param prefix: Path where the files would be uploaded in OCI.
+    :return: None
+    """
+    oci_object_name = prefix + oci_object_name
+    object_storage = oci.object_storage.ObjectStorageClient(oci_config)
 
     # Determine the object name (key) in OCI based on the file name
     # oci_object_name = os.path.basename(oci_object_name)
@@ -84,6 +69,8 @@ def upload_to_oci(oci_bucket_name,local_file_path, namespace):
                 )
             )
             part_number += 1
+
+    # Commit the upload
     commit_multipart_upload_response = object_storage.commit_multipart_upload(
         namespace_name=namespace,
         bucket_name=oci_bucket_name,
@@ -93,25 +80,83 @@ def upload_to_oci(oci_bucket_name,local_file_path, namespace):
             parts_to_commit=upload_parts
         )
     )
-    
 
-# Function to delete a file after uploading
-def delete_file(local_path):
-    os.remove(local_path)
 
-# Local directory to upload
-local_directory = "/home/ubuntu/NUAA/depth-map"
+def list_oci_objects() -> List[str]:
+    """
+    List objects stored in OCI Object Storage.
 
-# OCI Object Storage bucket to upload to
-bucket_name = "Spoof-datasets"
+    :return: List of object names.
+    """
+    if os.path.exists('files_list.txt'):
+        with open('files_list.txt', 'r') as f:
+            list_of_files = f.readlines()
+        list_of_files = [x.replace('\n', '') for x in list_of_files]
+        return list_of_files
+    else:
+        return []
 
-# Walk through the local directory and upload files
-for filename in list:
-    local_path = filename
-    print(local_path)
-    object_name = os.path.relpath(local_path, local_directory)
-    upload_to_oci(bucket_name, local_path, namespace)
-    delete_file(local_path)
-    print(f"Uploaded and deleted: {object_name}")
 
-print("Upload and delete complete.")
+def write_to_list(list_of_files: List[str]) -> None:
+    """
+    Write a list of object names to a text file.
+
+    :param list_of_files: List of object names.
+    :return: None
+    """
+    list_of_files = [x + '\n' for x in list_of_files]
+    with open('files_list.txt', 'w') as f:
+        f.writelines(list_of_files)
+
+
+def sync_to_oci(local_dir: str, oci_bucket_name: str, oci_config: Dict, namespace: str, prefix: str) -> None:
+    """
+    Synchronize files from a local directory to OCI Object Storage.
+
+    :param local_dir: Root directory for files to be uploaded.
+    :param oci_bucket_name: Name of the OCI bucket.
+    :param oci_config: OCI configuration details.
+    :param namespace: OCI namespace being used.
+    :param prefix: Path where the files would be uploaded in OCI.
+    :return: None
+    """
+    oci_objects = list_oci_objects()
+
+    for root, _, files in os.walk(local_dir):
+        for file in files:
+            local_file_path = os.path.join(root, file)
+            oci_object_name = os.path.relpath(local_file_path, local_dir).replace(os.path.sep, '/')
+
+            if oci_object_name not in oci_objects:
+                print(f"Uploading {oci_object_name} to OCI Object Storage")
+                upload_to_oci(local_file_path, oci_object_name, oci_bucket_name, oci_config, namespace, prefix)
+                oci_objects.append(oci_object_name)
+                write_to_list(oci_objects)
+            else:
+                print(f"{oci_object_name} already exists in OCI Object Storage")
+
+
+def main() -> None:
+    """
+    Main function to synchronize files from a local directory to OCI Object Storage.
+
+    :return: None
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--local_dir', help='Root dir for files to be uploaded')
+    parser.add_argument('--oci-bucket', help='Bucket for files to be uploaded')
+    parser.add_argument('--prefix', help='Path where the files would be uploaded in OCI')
+    parser.add_argument('--name-space', help='OCI namespace being used')
+
+    args = parser.parse_args()
+
+    prefix = args.prefix
+
+    oci_config = oci.config.from_file()
+    namespace = args.namespace
+
+    sync_to_oci(args.local_dir, args.oci_bucket, oci_config, namespace, prefix)
+
+
+if __name__ == "__main__":
+    main()

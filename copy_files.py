@@ -1,7 +1,22 @@
+import argparse
+from typing import Dict
+
 import oci
 
+def move_files(source_namespace: str, source_bucket: str, source_directory: str, destination_namespace: str, destination_bucket: str, destination_directory: str, config: Dict, destructive: bool = False) -> None:
+    """
+    Move files from one OCI bucket to another location in OCI buckets.
 
-def move_files(source_namespace, source_bucket, source_directory, destination_namespace, destination_bucket, destination_directory, config,destructive=False):
+    :param source_namespace: Name space of origin for files.
+    :param source_bucket: Bucket of origin for files.
+    :param source_directory: Directory of origin for files.
+    :param destination_namespace: Name space of target for files.
+    :param destination_bucket: Bucket of target for files.
+    :param destination_directory: Directory of target for files.
+    :param config: OCI configuration details.
+    :param destructive: If True, deletes all files that are uploaded (default is False).
+    :return: None
+    """
     # Create a new Object Storage client
     object_storage_client = oci.object_storage.ObjectStorageClient(config)
 
@@ -19,7 +34,7 @@ def move_files(source_namespace, source_bucket, source_directory, destination_na
             source_namespace, source_bucket, prefix=source_directory, start=list_objects_response.data.next_start_with
         )
         object_list.extend(list_objects_response.data.objects)
-        if list_objects_response.data.next_start_with == None:
+        if list_objects_response.data.next_start_with is None:
             break
         page += 1
     # Iterate through each object in the source directory
@@ -28,24 +43,12 @@ def move_files(source_namespace, source_bucket, source_directory, destination_na
         source_object_name = obj.name
         destination_object_name = source_object_name.replace(source_directory, destination_directory, 1)
 
-        # Construct the source and destination object URLs
-        # source_object_url = f"https://objectstorage.{source_namespace}.oraclecloud.com/n/{source_namespace}/b/{source_bucket}/o/{source_object_name}"
-        # destination_object_url = f"https://objectstorage.{destination_namespace}.oraclecloud.com/n/{destination_namespace}/b/{destination_bucket}/o/{destination_object_name}"
-
         # Copy the object to the new location
         copy_object_response = object_storage_client.copy_object(
             namespace_name=destination_namespace,
             bucket_name=destination_bucket,
-            # source_object_url,
             copy_object_details=oci.object_storage.models.CopyObjectDetails(
                 source_object_name=source_object_name,
-                # source_object_if_match_e_tag=obj.etag,
-                # source_version_id=,
-                # destination_object_if_match_e_tag=,
-                # destination_object_if_none_match_e_tag=,
-                # destination_object_metadata={
-                #     'EXAMPLE_KEY_Itpug': 'EXAMPLE_VALUE_Ruz1ZzIwDZCsgLkgel2G'},
-
                 destination_region="mx-queretaro-1",
                 destination_namespace=destination_namespace,
                 destination_bucket=destination_bucket,
@@ -55,7 +58,7 @@ def move_files(source_namespace, source_bucket, source_directory, destination_na
         )
 
         # Check if the copy was successful
-        if copy_object_response.status == 202 :
+        if copy_object_response.status == 202:
             print(f"Object copied successfully from {source_object_name} to {destination_object_name}")
             if destructive:
                 # Delete the original object
@@ -73,34 +76,32 @@ def move_files(source_namespace, source_bucket, source_directory, destination_na
         else:
             print(f"Failed to copy object from {source_object_name} to {destination_object_name}")
 
+def main() -> None:
+    """
+    Parse command line arguments and initiate the file moving process.
 
+    :return: None
+    """
+    parser = argparse.ArgumentParser(description='Move files directories from one OCI bucket another location in OCI buckets')
+    parser.add_argument('--source-namespace', help='Name space of origin for files', type=str)
+    parser.add_argument('--destination-namespace', help='Name space of target for files', type=str)
+    parser.add_argument('--source-bucket', help='Bucket of origin for files', type=str)
+    parser.add_argument('--destination-bucket', help='Bucket of target for files', type=str)
+    parser.add_argument('--source-dir', help='Directory of origin for files', type=str)
+    parser.add_argument('--destination-dir', help='Directory of target for files', type=str)
+    parser.add_argument('--destructive', help='If True deletes all files that are uploaded', default=False, type=bool)
+    args = parser.parse_args()
 
+    source_namespace = args.source_namespace
+    source_bucket = args.source_bucket
+    destination_namespace = args.destination_namespace
+    destination_bucket = args.destination_bucket
+
+    source_object_dir = args.source_dir
+    destination_object_dir = args.destination_dir
+
+    move_files(source_namespace, source_bucket, source_object_dir, destination_namespace, destination_bucket,
+                destination_object_dir, config, destructive=False)
 
 if __name__ == "__main__":
-
-    config = oci.config.from_file()
-
-    path_names = [
-                  "NUAA",
-
-                  "Youtube",
-                  "Youtube_vlogs",
-                  "classified_vlogs",
-                  "HPAD",
-                  "kosmos",
-                  "models", "Celeb"]
-
-    source_namespace = "axnq1wbomszp"
-    source_bucket = "Spoof-datasets"
-    destination_namespace = "axnq1wbomszp"
-    destination_bucket = "Spoof-datasets"
-
-    for source_object_name in path_names:
-        # source_object_name = "HPAD"
-
-        destiation_name=source_object_name.split("/")[-1].lower().replace("-","_")
-        destination_object_name = f"spoof_detection/{destiation_name}"
-
-
-        move_files(source_namespace, source_bucket, source_object_name, destination_namespace, destination_bucket,
-                    destination_object_name, config,destructive=False)
+    main()
