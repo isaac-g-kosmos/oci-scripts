@@ -1,6 +1,10 @@
 # OCI Scriptps
 
-- 
+# Set up
+to se up your credential use the following code  after installing OCI:
+
+oci setup oci-cli-rc --file path/to/target/file
+# Fies
 - [copy_files.py](copy_files.py): Script for copying from a dir in OCI buckets to anothhe OCI bucket
 - [create_csv.py](create_csv.py): Create csv for use in [data_upload_script_csv.py](data_upload_script_csv.py)
 - [data_transfer_script.py](data_transfer_script.py): Script for transferring from S3 to OCI
